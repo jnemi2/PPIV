@@ -80,3 +80,44 @@
 
 ;_______________________________________________________________
 
+(defclass Layer ()
+  (
+    (_weights :accessor weights)
+    (_biases :accessor biases)
+    (_output :accessor output)
+  )
+)
+
+(defmethod initialize-instance :after ((this Layer) &rest initargs &key n_neurons n_inputs)
+  (progn
+    (setf (weights this) (random_matrix n_inputs n_neurons))
+    (setf (biases this) (list (make-list n_neurons :initial-element 0)))
+  )
+)
+
+(defmethod forward ((this Layer) inputs)
+  (setf (output this) 
+    (sum_row 
+      (matrix_product inputs (weights this)) 
+      (biases this)
+    )
+  )
+)
+
+;_______________________________________________________________
+
+(defvar X '((1 2 3 2.5)
+                 (2 5 -1 2)
+                 (-1.5 2.7 3.3 -0.8)))
+
+(defvar weights '((0.2 0.8 -0.5 1.0)
+                  (0.5 -0.91 0.26 -0.5)
+                  (-0.26 -0.27 0.17 0.87)))
+
+(defvar biases '(2 3 0.5))
+
+
+(defvar layer1 (make-instance 'Layer :n_neurons 3 :n_inputs 4))
+(forward layer1 X)
+(print_matrix (output layer1))
+(inspect layer1)
