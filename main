@@ -104,6 +104,54 @@
   )
 )
 
+;________
+
+(defclass ReLU (Layer)
+  ()
+)
+
+(defmethod forward :after ((this ReLU) inputs)
+  (setf (output this) 
+    (mapcar 
+      (lambda (row) 
+        (mapcar 
+          (lambda (element)
+            (if (> 0 element)
+              0
+              element
+            )
+          ) 
+          row
+        )
+      )
+      (output this)
+    )
+  )
+)
+
+(defclass LeakyReLU (Layer)
+  ()
+)
+
+(defmethod forward :after ((this LeakyReLU) inputs)
+  (setf (output this) 
+    (mapcar 
+      (lambda (row) 
+        (mapcar 
+          (lambda (element)
+            (if (> 0 element)
+              (* element 0.1)
+              element
+            )
+          ) 
+          row
+        )
+      )
+      (output this)
+    )
+  )
+)
+
 ;_______________________________________________________________
 
 (defvar X '((1 2 3 2.5)
@@ -117,7 +165,9 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'Layer :n_neurons 3 :n_inputs 4))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 3 :n_inputs 4))
 (forward layer1 X)
 (print_matrix (output layer1))
 (inspect layer1)
+
+
