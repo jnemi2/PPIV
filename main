@@ -106,6 +106,7 @@
 
 ;________
 
+
 (defclass ReLU (Layer)
   ()
 )
@@ -129,6 +130,33 @@
   )
 )
 
+(defmethod derivative (value)
+  (if (> 0 value)
+    0
+    1
+  )
+)
+
+(defmethod backward ((this ReLU) error)
+  ;optimizes layer and returns error of previous layer
+  (setf (gradient_layer this)
+    (mapcar 
+      (lambda (Arow Brow Erow) 
+        (mapcar 
+          (lambda (Ai Bi Ei)
+            (* Ai Bi (derivative Ei))
+          )
+          Arow Brow Erow
+        )
+      ) 
+      A B error
+    )
+  )
+  ;continuar error de pesos, optimizar, y devolver error
+)
+
+;________
+
 (defclass LeakyReLU (Layer)
   ()
 )
@@ -151,6 +179,14 @@
     )
   )
 )
+
+(defmethod derivative (value)
+  (if (> 0 value)
+    0.1
+    1
+  )
+)
+
 
 ;_______________________________________________________________
 
