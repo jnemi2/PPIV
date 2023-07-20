@@ -166,8 +166,21 @@
 
 
 (defvar layer1 (make-instance 'LeakyReLU :n_neurons 3 :n_inputs 4))
-(forward layer1 X)
-(print_matrix (output layer1))
-(inspect layer1)
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 2 :n_inputs 3))
+(defvar layer3 (make-instance 'LeakyReLU :n_neurons 1 :n_inputs 2))
+(defvar nn (list layer1 layer2 layer3))
+
+(defun predict (input topology)
+  (if topology
+    (predict (forward (car topology) input) (cdr topology))
+    input
+  )
+)
+
+;(forward layer1 X)
+;(print_matrix (forward layer2 (output layer1)))
+(print_matrix (predict X nn))
+(print_matrix (output layer3))
+
 
 
