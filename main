@@ -1,0 +1,82 @@
+(defun print_matrix (matrix)
+  (format t "~%(~a" (car matrix))
+  (mapcar (lambda (row) (format t "~% ~a" row)) (cdr matrix))
+  (format t ")")
+)
+
+(defun random_matrix (rows columns)
+  ;(mapcar #'random (make-list 10 :initial-element 101))
+  (mapcar (lambda (row) (mapcar #'random (make-list columns :initial-element (get-universal-time)))) (make-list rows :initial-element '()))
+)
+
+(defun transpose (matrix)
+  (apply #'mapcar #'list matrix)
+)
+
+(defun dot (a b)
+  (apply #'+ (mapcar #'* a b))
+)
+
+(defun matrix_product (A B)
+  (if (= (length B) (length (car A)))
+    (let ((BT (transpose B)))
+      (mapcar 
+        (lambda (rowA)
+          (mapcar 
+            (lambda (colB)
+              (dot rowA colB)
+            )
+            BT
+          )
+        )
+        A
+      )
+    )
+    (error "invalid matrix shapes")
+  )
+)
+
+(defun matrix_sum (A B)
+  (mapcar (lambda (rowA rowB) (mapcar #'+ rowA rowB)) A B)
+)
+
+;_____________________________________________________________
+
+(defun sum_row (A B)
+  (mapcar (lambda (row) (mapcar #'+ row (car B))) A)
+)
+
+(defun prod (A B)
+  (mapcar (lambda (Arow Brow) (mapcar #'* Arow Brow)) A B)
+)
+
+(defun AxBt (A Bt)
+  (if (= (length (car Bt)) (length (car A)))
+    (mapcar 
+      (lambda (rowA)
+        (mapcar 
+          (lambda (colB)
+            (dot rowA colB)
+          )
+          Bt
+        )
+      )
+      A
+    )
+    (error "invalid matrix shapes")
+  )
+)
+
+(defun AtxB (At B)
+  (matrix_product (transpose At) B)
+)
+
+
+;(print_matrix (transpose '((1 2) (3 5))))
+;(print (dot '(1 2) '(3 5)))
+;(print_matrix (matrix_product '((1 2) (3 5)) '((7) (11))))
+;(print_matrix (AxBt '((1 2) (3 5)) '((7 11))))
+;(print_matrix (AtxB (transpose '((1 2) (3 5))) '((7) (11))))
+
+;_______________________________________________________________
+
