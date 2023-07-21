@@ -6,7 +6,7 @@
 
 (defun random_matrix (rows columns)
   ;(mapcar #'random (make-list 10 :initial-element 101))
-  (mapcar (lambda (row) (mapcar #'random (make-list columns :initial-element (get-universal-time)))) (make-list rows :initial-element '()))
+  (mapcar (lambda (row) (mapcar #'random (make-list columns :initial-element 1.0))) (make-list rows :initial-element '()))
 )
 
 (defun transpose (matrix)
@@ -117,7 +117,41 @@
 ;(defgeneric backward (this error))
 
 (defmethod derivative ((this Layer) value) (error "derivative not implemented for Layer"))
-(defmethod backward ((this Layer) error) (error "error not implemented for Layer"))
+
+(defmethod backward ((this Layer) error)
+  ;optimizes layer and returns error of previous layer
+  (let ((gradient_layer nil) (gradient_weights nil)) ;declaration of variables
+    ;calculate gradient_layer
+    (setf gradient_layer
+      (prod 
+        error 
+        (mapcar 
+          (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
+          (output this))))
+    ;optimize biases with gradient_layer
+    (setf (biases this)
+      (matrix_sum 
+        (biases this) 
+        (scalar_prod 
+          *learning_rate*
+          (list (mapcar 
+            (lambda (tot_bias_error) (/ tot_bias_error (length gradient_layer)))
+            (apply #'mapcar #'+ gradient_layer)
+          )) ;avg of each bias error (of all samples)
+        )))
+    ;calculate contribution to error of previous Layer
+    (let 
+      ((contribution (AxBt gradient_layer (weights this)))) ;contribution to error of previous Layer
+      ;optimize weights with gradient_weights
+      (setf (weights this)
+        (matrix_sum
+          (weights this)
+          (scalar_prod
+            *learning_rate*
+            (AtxB (input this) gradient_layer))))
+      ;returning contribution to previous Layer
+      contribution)))
+
 
 ;________
 
@@ -153,40 +187,6 @@
   )
 )
 
-(defmethod backward ((this ReLU) error)
-  ;optimizes layer and returns error of previous layer
-  (let ((gradient_layer nil) (gradient_weights nil)) ;declaration of variables
-    ;calculate gradient_layer
-    (setf gradient_layer
-      (prod 
-        error 
-        (mapcar 
-          (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
-          (output this))))
-    ;optimize biases with gradient_layer
-    (setf (biases this)
-      (matrix_sum 
-        (biases this) 
-        (scalar_prod 
-          *learning_rate*
-          (list (mapcar 
-            (lambda (tot_bias_error) (/ tot_bias_error (length gradient_layer)))
-            (apply #'mapcar #'+ gradient_layer)
-          )) ;avg of each bias error (of all samples)
-        )))
-    ;calculate contribution to error of previous Layer
-    (let 
-      ((contribution (AxBt gradient_layer (weights this)))) ;contribution to error of previous Layer
-      ;optimize weights with gradient_weights
-      (setf (weights this)
-        (matrix_sum
-          (weights this)
-          (scalar_prod
-            *learning_rate*
-            (AtxB (input this) gradient_layer))))
-      ;returning contribution to previous Layer
-      contribution)))
-
 ;________
 
 (defclass LeakyReLU (Layer)
@@ -219,11 +219,6 @@
   )
 )
 
-(defmethod backward ((this LeakyReLU) error)
-  ;optimizes layer and returns error of previous layer
-  
-)
-
 ;_______________________________________________________________
 
 (defvar X '((1 2 3 2.5)
@@ -252,4 +247,16 @@
 (forward layer1 X)
 ;(print_matrix (forward layer2 (output layer1)))
 (print_matrix (predict X nn))
-(print_matrix (output layer3))
+
+
+(defun optimize_nn (error rtopology)
+  (if rtopology
+    (optimize_nn (backward (car rtopology) error) (cdr rtopology))
+  )
+)
+(inspect (caddr nn))
+(optimize_nn '((1) (1) (1)) (reverse nn))
+
+
+(print_matrix (predict X nn))
+(inspect (caddr nn))
