@@ -50,6 +50,10 @@
   (mapcar (lambda (Arow Brow) (mapcar #'* Arow Brow)) A B)
 )
 
+(defun scalar_prod (x A)
+  (mapcar (lambda (Arow) (mapcar (lambda (Ai) (* Ai x)) Arow)) A)
+)
+
 (defun AxBt (A Bt)
   (if (= (length (car Bt)) (length (car A)))
     (mapcar 
@@ -78,6 +82,9 @@
 ;(print_matrix (AxBt '((1 2) (3 5)) '((7 11))))
 ;(print_matrix (AtxB (transpose '((1 2) (3 5))) '((7) (11))))
 
+;_______________________________________________________________
+
+(defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
 ;_______________________________________________________________
 
 (defclass Layer ()
@@ -148,17 +155,37 @@
 
 (defmethod backward ((this ReLU) error)
   ;optimizes layer and returns error of previous layer
-  (setf (gradient_layer this)
-    (prod 
-      error 
-      (mapcar 
-        (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
-        (output this)
-      ) 
-    )
-  )
-  ;continuar error de pesos, optimizar, y devolver error
-)
+  (let ((gradient_layer nil) (gradient_weights nil)) ;declaration of variables
+    ;calculate gradient_layer
+    (setf gradient_layer
+      (prod 
+        error 
+        (mapcar 
+          (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
+          (output this))))
+    ;optimize biases with gradient_layer
+    (setf (biases this)
+      (matrix_sum 
+        (biases this) 
+        (scalar_prod 
+          *learning_rate*
+          (list (mapcar 
+            (lambda (tot_bias_error) (/ tot_bias_error (length gradient_layer)))
+            (apply #'mapcar #'+ gradient_layer)
+          )) ;avg of each bias error (of all samples)
+        )))
+    ;calculate contribution to error of previous Layer
+    (let 
+      ((contribution (AxBt gradient_layer (weights this)))) ;contribution to error of previous Layer
+      ;optimize weights with gradient_weights
+      (setf (weights this)
+        (matrix_sum
+          (weights this)
+          (scalar_prod
+            *learning_rate*
+            (AtxB (input this) gradient_layer))))
+      ;returning contribution to previous Layer
+      contribution)))
 
 ;________
 
