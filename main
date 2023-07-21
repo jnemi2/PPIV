@@ -63,6 +63,7 @@
 
 (defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
 (defvar *batch_size* 10) ;number of samples to be fed at once during training
+(defvar *train_file_size* )
 (defvar *classes* '((1 0 0 0 0 0 0 0 0 0)
                     (0 1 0 0 0 0 0 0 0 0)
                     (0 0 1 0 0 0 0 0 0 0)
@@ -233,8 +234,6 @@
 ;_______________________________________________________________
 
 
-
-
 ;tests
 
 (defvar X '((1 2 3 2.5)
@@ -270,9 +269,32 @@
     (optimize_nn (backward (car rtopology) error) (cdr rtopology))
   )
 )
-(inspect (caddr nn))
+;(inspect (caddr nn))
+
+
 (optimize_nn (loss_derivative (predict X nn) 'here_go_the_classes) (reverse nn))
 
 
 (print_matrix (predict X nn))
-(inspect (caddr nn))
+;(inspect (caddr nn))
+
+
+;_______________________________________________________________
+
+
+(defun get_batch (batch_number file batch_size)
+  (let ((batch nil))
+    (loop for i from (* batch_number batch_size) to (1- (* (1+ batch_number) batch_size)) do
+      (setq batch (append batch (list (get-numbers-from-line file i))))
+    )
+    batch
+  )
+)
+
+(print (get_batch 0 "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv" *batch_size*))
+
+
+(defun train (train_file)
+;  
+)
+
