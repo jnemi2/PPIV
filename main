@@ -1,3 +1,4 @@
+
 (defun print_matrix (matrix)
   (format t "~%(~a" (car matrix))
   (mapcar (lambda (row) (format t "~% ~a" row)) (cdr matrix))
@@ -63,7 +64,7 @@
 
 (defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
 (defvar *batch_size* 10) ;number of samples to be fed at once during training
-(defvar *train_file_size* )
+(defvar *train_file_size* 240000)
 (defvar *classes* '((1 0 0 0 0 0 0 0 0 0)
                     (0 1 0 0 0 0 0 0 0 0)
                     (0 0 1 0 0 0 0 0 0 0)
@@ -247,9 +248,9 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'LeakyReLU :n_neurons 3 :n_inputs 4))
-(defvar layer2 (make-instance 'LeakyReLU :n_neurons 2 :n_inputs 3))
-(defvar layer3 (make-instance 'LeakyReLU :n_neurons 1 :n_inputs 2))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 500 :n_inputs 784))
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 200 :n_inputs 500))
+(defvar layer3 (make-instance 'LeakyReLU :n_neurons 10 :n_inputs 200))
 (defvar nn (list layer1 layer2 layer3))
 
 (defun predict (input topology)
@@ -272,7 +273,7 @@
 ;(inspect (caddr nn))
 
 
-(optimize_nn (loss_derivative (predict X nn) 'here_go_the_classes) (reverse nn))
+;(optimize_nn (loss_derivative (predict X nn) 'here_go_the_classes) (reverse nn))
 
 
 (print_matrix (predict X nn))
@@ -291,10 +292,27 @@
   )
 )
 
-(print (get_batch 0 "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv" *batch_size*))
+;(print (get_batch 0 "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv" *batch_size*))
 
 
 (defun train (train_file)
-;  
+  (loop for batch_id from 0 to (/ *train_file_size* *batch_size*) do
+    (let ((batch (get_batch batch_id train_file *batch_size*)))
+      ;adapt batch and optimize
+      (optimize_nn 
+        (loss_derivative 
+          (predict (mapcar #'cdr batch) nn) ;input
+          (mapcar #'car batch) ;classes
+        ) 
+        (reverse nn)
+      )
+      
+      ;debug
+      (print batch_id)
+    )
+  )
 )
+
+(train "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv")
+
 
