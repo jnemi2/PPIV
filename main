@@ -62,7 +62,7 @@
 ;_____________________________________________________________________________
 
 (defvar *learning_rate* -0.1) ;must be negative to implement gradient descent
-(defvar *batch_size* 10) ;number of samples to be fed at once during training
+(defvar *batch_size* 30) ;number of samples to be fed at once during training
 (defvar *train_file_size* 30)
 ;
 (defvar *classes* '((1 0 0 0 0 0 0 0 0)
