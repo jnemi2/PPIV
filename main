@@ -62,18 +62,51 @@
 ;_____________________________________________________________________________
 
 (defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
-(defvar *batch_size* 10) ;number of samples to be fed at once during training
-(defvar *train_file_size* 10)
-(defvar *classes* '((1 0 0 0 0 0 0 0 0 0)
-                    (0 1 0 0 0 0 0 0 0 0)
-                    (0 0 1 0 0 0 0 0 0 0)
-                    (0 0 0 1 0 0 0 0 0 0)
-                    (0 0 0 0 1 0 0 0 0 0)
-                    (0 0 0 0 0 1 0 0 0 0)
-                    (0 0 0 0 0 0 1 0 0 0)
-                    (0 0 0 0 0 0 0 1 0 0)
-                    (0 0 0 0 0 0 0 0 1 0)
-                    (0 0 0 0 0 0 0 0 0 1))) ;one-hot-encoded classes
+(defvar *batch_size* 2) ;number of samples to be fed at once during training
+(defvar *train_file_size* 30)
+;
+(defvar *classes* '((1 0 0 0 0 0 0 0 0)
+                    (0 1 0 0 0 0 0 0 0)
+                    (0 0 1 0 0 0 0 0 0)
+                    (0 0 0 1 0 0 0 0 0)
+                    (0 0 0 0 1 0 0 0 0)
+                    (0 0 0 0 0 1 0 0 0)
+                    (0 0 0 0 0 0 1 0 0)
+                    (0 0 0 0 0 0 0 1 0)
+                    (0 0 0 0 0 0 0 0 1))) ;one-hot-encoded classes
+
+;1:rojo | 2:verde | 3:azul | 4:amarillo | 5:naranja | 6:cyan | 7:magenta | 8:blanco | 9:negro
+(defvar *colors_matrix* '((1 255 0 0)
+                      (2 0 255 0)
+                      (3 0 0 255)
+                      (4 255 255 0)
+                      (5 255 165 0)
+                      (6 0 255 255)
+                      (7 255 0 255)
+                      (8 255 255 255)
+                      (9 0 0 0)
+                      (7 128 0 128)
+                      (8 255 192 203)
+                      (8 128 128 128)
+                      (1 165 42 42)
+                      (2 0 128 0)
+                      (6 0 128 128)
+                      (1 128 0 0)
+                      (3 0 0 128)
+                      (4 128 128 0)
+                      (6 0 255 255)
+                      (7 255 0 255)
+                      (5 250 162 0)
+                      (8 192 192 192)
+                      (4 255 215 0)
+                      (7 75 0 130)
+                      (8 245 245 220)
+                      (6 64 224 208)
+                      (8 230 230 250)
+                      (8 189 252 201)
+                      (7 250 128 114)
+                      (7 238 130 238)))
+
 
 (defun encode (digit)
   (nth digit *classes*))
@@ -247,9 +280,9 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'LeakyReLU :n_neurons 300 :n_inputs 784))
-(defvar layer2 (make-instance 'LeakyReLU :n_neurons 200 :n_inputs 300))
-(defvar layer3 (make-instance 'LeakyReLU :n_neurons 10 :n_inputs 200))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 100 :n_inputs 3))
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 200 :n_inputs 100))
+(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 200))
 (defvar nn (list layer1 layer2 layer3))
 
 (defun predict (input topology)
@@ -281,17 +314,21 @@
 
 ;_______________________________________________________________
 
+;gets batch from file
+;(defun get_batch (batch_number file batch_size)
+;  (let ((batch nil))
+;    (loop for i from (* batch_number batch_size) to (1- (* (1+ batch_number) batch_size)) do
+;      (setq batch (append batch (list (get-numbers-from-line file i)))))
+;    batch))
 
+;gets batch from matrix
 (defun get_batch (batch_number file batch_size)
   (let ((batch nil))
     (loop for i from (* batch_number batch_size) to (1- (* (1+ batch_number) batch_size)) do
-      (setq batch (append batch (list (get-numbers-from-line file i))))
-    )
-    batch
-  )
-)
+      (setq batch (append batch (list (nth i file)))))
+    batch))
 
-;(print (get_batch 0 "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv" *batch_size*))
+(print (get_batch 0 *colors_matrix* *batch_size*))
 
 
 (defun train (train_file)
@@ -299,12 +336,7 @@
     (let ((batch (get_batch batch_id train_file *batch_size*)))
       ;debug
       (print batch_id)
-      (print_matrix (biases (car nn)))
-      (print_matrix (biases (cadr nn)))
-      (print_matrix (biases (caddr nn)))
-      (print_matrix (weights (car nn)))
-      (print_matrix (weights (cadr nn)))
-      (print_matrix (weights (caddr nn)))
+      
       ;adapt batch and optimize
       (optimize_nn 
         (loss_derivative 
@@ -317,5 +349,6 @@
   )
 )
 
-(train "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv")
+;(train "C:\\Users\\Usuario\\Desktop\\Color\\color_csv.txt")
+
 
