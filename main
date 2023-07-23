@@ -61,8 +61,8 @@
 
 ;_____________________________________________________________________________
 
-(defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
-(defvar *batch_size* 2) ;number of samples to be fed at once during training
+(defvar *learning_rate* -0.1) ;must be negative to implement gradient descent
+(defvar *batch_size* 10) ;number of samples to be fed at once during training
 (defvar *train_file_size* 30)
 ;
 (defvar *classes* '((1 0 0 0 0 0 0 0 0)
@@ -108,8 +108,8 @@
                       (7 238 130 238)))
 
 
-(defun encode (digit)
-  (nth digit *classes*))
+(defun encode (class)
+  (nth class *classes*))
 
 ;_____________________________________________________________________________
 
@@ -280,9 +280,9 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'LeakyReLU :n_neurons 100 :n_inputs 3))
-(defvar layer2 (make-instance 'LeakyReLU :n_neurons 200 :n_inputs 100))
-(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 200))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 10 :n_inputs 3))
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 4 :n_inputs 10))
+(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 4))
 (defvar nn (list layer1 layer2 layer3))
 
 (defun predict (input topology)
@@ -329,13 +329,17 @@
     batch))
 
 (print (get_batch 0 *colors_matrix* *batch_size*))
-
+(print (get_batch 1 *colors_matrix* *batch_size*))
+(print (get_batch 2 *colors_matrix* *batch_size*))
 
 (defun train (train_file)
-  (loop for batch_id from 0 to (/ *train_file_size* *batch_size*) do
+  (loop for batch_id from 0 to (1- (/ *train_file_size* *batch_size*)) do
     (let ((batch (get_batch batch_id train_file *batch_size*)))
       ;debug
       (print batch_id)
+      ;(inspect (car nn))
+      ;(inspect (cadr nn))
+      (inspect (caddr nn))
       
       ;adapt batch and optimize
       (optimize_nn 
@@ -349,6 +353,9 @@
   )
 )
 
-;(train "C:\\Users\\Usuario\\Desktop\\Color\\color_csv.txt")
-
+(train *colors_matrix*)
+(print "TRAINING FINISHED")
+;(inspect (car nn))
+;(inspect (cadr nn))
+(inspect (caddr nn))
 
