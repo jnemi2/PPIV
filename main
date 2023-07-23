@@ -61,7 +61,7 @@
 
 ;_____________________________________________________________________________
 
-(defvar *learning_rate* -0.1) ;must be negative to implement gradient descent
+(defvar *learning_rate* -0.01) ;must be negative to implement gradient descent
 (defvar *batch_size* 30) ;number of samples to be fed at once during training
 (defvar *train_file_size* 30)
 ;
@@ -238,9 +238,6 @@
   (flet ((actual_derivative (a y)
          (- a y)
          ))
-    (print "loss_derivative showing received results") ;debug
-    (print_matrix results) ;debug
-    (print "End of loss_derivative received results") ;debug
     (mapcar 
       (lambda (sample_result exp_class)
         (mapcar #'actual_derivative sample_result (encode exp_class)))
@@ -283,10 +280,10 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'LeakyReLU :n_neurons 10 :n_inputs 3))
-(defvar layer2 (make-instance 'LeakyReLU :n_neurons 4 :n_inputs 10))
-(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 4))
-(defvar nn (list layer1 layer2 layer3))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 4 :n_inputs 3))
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 4))
+;(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 9))
+(defvar nn (list layer1 layer2))
 
 (defun predict (input topology)
   (if topology
@@ -301,9 +298,6 @@
 
 
 (defun optimize_nn (error rtopology)
-  (print "Error received in optimize_nn") ;debug
-  (print_matrix error) ;debug
-  (print "End of error received in optimize_nn") ;debug
   (if rtopology
     (optimize_nn (backward (car rtopology) error) (cdr rtopology))
   )
@@ -334,18 +328,18 @@
       (setq batch (append batch (list (nth i file)))))
     batch))
 
-(print (get_batch 0 *colors_matrix* *batch_size*))
-(print (get_batch 1 *colors_matrix* *batch_size*))
-(print (get_batch 2 *colors_matrix* *batch_size*))
+;(print (get_batch 0 *colors_matrix* *batch_size*))
+;(print (get_batch 1 *colors_matrix* *batch_size*))
+;(print (get_batch 2 *colors_matrix* *batch_size*))
 
 (defun train (train_file)
   (loop for batch_id from 0 to (1- (/ *train_file_size* *batch_size*)) do
     (let ((batch (get_batch batch_id train_file *batch_size*)))
       ;debug
-      (print batch_id)
+      ;(print batch_id)
       ;(inspect (car nn))
       ;(inspect (cadr nn))
-      (inspect (caddr nn))
+      ;(inspect (caddr nn))
       
       ;adapt batch and optimize
       (optimize_nn 
@@ -359,9 +353,31 @@
   )
 )
 
+(defun total_loss (test)
+  (format t "~%Avg loss: ~a~%" 
+    (/
+      (reduce #'+ 
+        (mapcan #'identity 
+          (loss
+            (predict (mapcar #'cdr test) nn)
+            (mapcar #'car test))))
+      (length test)))
+)
+
+;(total_loss *colors_matrix*)
+(total_loss (list (car *colors_matrix*)))
 (train *colors_matrix*)
-(print "TRAINING FINISHED")
+;(total_loss *colors_matrix*)
+(total_loss (list (car *colors_matrix*)))
+(train *colors_matrix*)
+
+(total_loss (list (car *colors_matrix*)))
+;(train *colors_matrix*)
+
+
+
+;(print "TRAINING FINISHED")
 ;(inspect (car nn))
 ;(inspect (cadr nn))
-(inspect (caddr nn))
+;(inspect (caddr nn))
 
