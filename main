@@ -75,37 +75,37 @@
                     (0 0 0 0 0 0 0 1 0)
                     (0 0 0 0 0 0 0 0 1))) ;one-hot-encoded classes
 
-;1:rojo | 2:verde | 3:azul | 4:amarillo | 5:naranja | 6:cyan | 7:magenta | 8:blanco | 9:negro
-(defvar *colors_matrix* '((1 255 0 0)
-                      (2 0 255 0)
-                      (3 0 0 255)
-                      (4 255 255 0)
-                      (5 255 165 0)
-                      (6 0 255 255)
-                      (7 255 0 255)
-                      (8 255 255 255)
-                      (9 0 0 0)
-                      (7 128 0 128)
-                      (8 255 192 203)
-                      (8 128 128 128)
-                      (1 165 42 42)
-                      (2 0 128 0)
-                      (6 0 128 128)
-                      (1 128 0 0)
-                      (3 0 0 128)
-                      (4 128 128 0)
-                      (6 0 255 255)
-                      (7 255 0 255)
-                      (5 250 162 0)
-                      (8 192 192 192)
-                      (4 255 215 0)
-                      (7 75 0 130)
-                      (8 245 245 220)
-                      (6 64 224 208)
-                      (8 230 230 250)
-                      (8 189 252 201)
-                      (7 250 128 114)
-                      (7 238 130 238)))
+;0:rojo | 1:verde | 2:azul | 3:amarillo | 4:naranja | 5:cyan | 6:magenta | 7:blanco | 8:negro
+(defvar *colors_matrix* '((0 255 0 0)
+                      (1 0 255 0)
+                      (2 0 0 255)
+                      (3 255 255 0)
+                      (4 255 165 0)
+                      (5 0 255 255)
+                      (6 255 0 255)
+                      (7 255 255 255)
+                      (8 1 1 1)
+                      (6 128 0 128)
+                      (7 255 192 203)
+                      (7 128 128 128)
+                      (0 165 42 42)
+                      (1 0 128 0)
+                      (5 0 128 128)
+                      (0 128 0 0)
+                      (2 0 0 128)
+                      (3 128 128 0)
+                      (5 0 255 255)
+                      (6 255 0 255)
+                      (4 250 162 0)
+                      (7 192 192 192)
+                      (3 255 215 0)
+                      (6 75 0 130)
+                      (7 245 245 220)
+                      (5 64 224 208)
+                      (7 230 230 250)
+                      (7 189 252 201)
+                      (6 250 128 114)
+                      (6 238 130 238)))
 
 
 (defun encode (class)
@@ -238,6 +238,9 @@
   (flet ((actual_derivative (a y)
          (- a y)
          ))
+    (print "loss_derivative showing received results") ;debug
+    (print_matrix results) ;debug
+    (print "End of loss_derivative received results") ;debug
     (mapcar 
       (lambda (sample_result exp_class)
         (mapcar #'actual_derivative sample_result (encode exp_class)))
@@ -298,6 +301,9 @@
 
 
 (defun optimize_nn (error rtopology)
+  (print "Error received in optimize_nn") ;debug
+  (print_matrix error) ;debug
+  (print "End of error received in optimize_nn") ;debug
   (if rtopology
     (optimize_nn (backward (car rtopology) error) (cdr rtopology))
   )
