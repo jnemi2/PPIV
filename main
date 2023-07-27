@@ -1,21 +1,17 @@
 (defun print_matrix (matrix)
   (format t "~%(~a" (car matrix))
   (mapcar (lambda (row) (format t "~% ~a" row)) (cdr matrix))
-  (format t ")")
-)
+  (format t ")"))
 
 (defun random_matrix (rows columns)
   ;(mapcar #'random (make-list 10 :initial-element 101))
-  (mapcar (lambda (row) (mapcar #'random (make-list columns :initial-element (get-universal-time)))) (make-list rows :initial-element '()))
-)
+  (mapcar (lambda (row) (mapcar #'random (make-list columns :initial-element 1.0))) (make-list rows :initial-element '())))
 
 (defun transpose (matrix)
-  (apply #'mapcar #'list matrix)
-)
+  (apply #'mapcar #'list matrix))
 
 (defun dot (a b)
-  (apply #'+ (mapcar #'* a b))
-)
+  (apply #'+ (mapcar #'* a b)))
 
 (defun matrix_product (A B)
   (if (= (length B) (length (car A)))
@@ -24,31 +20,24 @@
         (lambda (rowA)
           (mapcar 
             (lambda (colB)
-              (dot rowA colB)
-            )
-            BT
-          )
-        )
-        A
-      )
-    )
-    (error "invalid matrix shapes")
-  )
-)
+              (dot rowA colB))
+            BT))
+        A))
+    (error "invalid matrix shapes")))
 
 (defun matrix_sum (A B)
-  (mapcar (lambda (rowA rowB) (mapcar #'+ rowA rowB)) A B)
-)
+  (mapcar (lambda (rowA rowB) (mapcar #'+ rowA rowB)) A B))
 
 ;_____________________________________________________________
 
 (defun sum_row (A B)
-  (mapcar (lambda (row) (mapcar #'+ row (car B))) A)
-)
+  (mapcar (lambda (row) (mapcar #'+ row (car B))) A))
 
 (defun prod (A B)
-  (mapcar (lambda (Arow Brow) (mapcar #'* Arow Brow)) A B)
-)
+  (mapcar (lambda (Arow Brow) (mapcar #'* Arow Brow)) A B))
+
+(defun scalar_prod (x A)
+  (mapcar (lambda (Arow) (mapcar (lambda (Ai) (* Ai x)) Arow)) A))
 
 (defun AxBt (A Bt)
   (if (= (length (car Bt)) (length (car A)))
@@ -56,21 +45,13 @@
       (lambda (rowA)
         (mapcar 
           (lambda (colB)
-            (dot rowA colB)
-          )
-          Bt
-        )
-      )
-      A
-    )
-    (error "invalid matrix shapes")
-  )
-)
+            (dot rowA colB))
+          Bt))
+      A)
+    (error "invalid matrix shapes")))
 
 (defun AtxB (At B)
-  (matrix_product (transpose At) B)
-)
-
+  (matrix_product (transpose At) B))
 
 ;(print_matrix (transpose '((1 2) (3 5))))
 ;(print (dot '(1 2) '(3 5)))
@@ -78,7 +59,27 @@
 ;(print_matrix (AxBt '((1 2) (3 5)) '((7 11))))
 ;(print_matrix (AtxB (transpose '((1 2) (3 5))) '((7) (11))))
 
-;_______________________________________________________________
+;_____________________________________________________________________________
+
+(defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
+(defvar *batch_size* 5) ;number of samples to be fed at once during training
+(defvar *train_file_size* 5)
+;
+(defvar *classes* '((1 0)
+                    (0 1))) ;one-hot-encoded classes
+
+(defvar *colors_matrix* '(
+                      (0 0.106 0.114)
+                      (0 0.311 -0.664)
+                      (0 0.020 -0.703)
+                      (1 -0.054 0.508)
+                      (1 -0.128 -0.011)))
+
+
+(defun encode (class)
+  (nth class *classes*))
+
+;_____________________________________________________________________________
 
 (defclass Layer ()
   (
@@ -92,25 +93,54 @@
 (defmethod initialize-instance :after ((this Layer) &rest initargs &key n_neurons n_inputs)
   (progn
     (setf (weights this) (random_matrix n_inputs n_neurons))
-    (setf (biases this) (list (make-list n_neurons :initial-element 0)))
-  )
-)
+    (setf (biases this) (list (make-list n_neurons :initial-element 0)))))
 
 (defmethod forward ((this Layer) inputs)
   (setf (input this) inputs) ;pointer to input
   (setf (output this) 
     (sum_row 
       (matrix_product inputs (weights this)) 
-      (biases this)
-    )
-  )
-)
+      (biases this))))
 
 ;(defgeneric derivative (this value))
 ;(defgeneric backward (this error))
 
 (defmethod derivative ((this Layer) value) (error "derivative not implemented for Layer"))
-(defmethod backward ((this Layer) error) (error "error not implemented for Layer"))
+
+(defmethod backward ((this Layer) error)
+  ;optimizes layer and returns error of previous layer
+  (let ((gradient_layer nil) (gradient_weights nil)) ;declaration of variables
+    ;calculate gradient_layer
+    (setf gradient_layer
+      (prod 
+        error 
+        (mapcar 
+          (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
+          (output this))))
+    ;optimize biases with gradient_layer
+    (setf (biases this)
+      (matrix_sum 
+        (biases this) 
+        (scalar_prod 
+          *learning_rate*
+          (list (mapcar 
+            (lambda (tot_bias_error) (/ tot_bias_error (length gradient_layer)))
+            (apply #'mapcar #'+ gradient_layer)
+          )) ;avg of each bias error (of all samples)
+        )))
+    ;calculate contribution to error of previous Layer
+    (let 
+      ((contribution (AxBt gradient_layer (weights this)))) ;contribution to error of previous Layer
+      ;optimize weights with gradient_weights
+      (setf (weights this)
+        (matrix_sum
+          (weights this)
+          (scalar_prod
+            *learning_rate*
+            (AtxB (input this) gradient_layer))))
+      ;returning contribution to previous Layer
+      contribution)))
+
 
 ;________
 
@@ -127,38 +157,15 @@
           (lambda (element)
             (if (> 0 element)
               0
-              element
-            )
-          ) 
-          row
-        )
-      )
-      (output this)
-    )
-  )
-)
+              element)) 
+          row))
+      (output this))))
 
 (defmethod derivative ((this ReLU) value)
   ;derivative of the activation function (expressed in function of the result of the activation)
   (if (> 0 value)
     0
-    1
-  )
-)
-
-(defmethod backward ((this ReLU) error)
-  ;optimizes layer and returns error of previous layer
-  (setf (gradient_layer this)
-    (prod 
-      error 
-      (mapcar 
-        (lambda (rowActiv) (mapcar (lambda (iActiv) (derivative this iActiv)) rowActiv)) 
-        (output this)
-      ) 
-    )
-  )
-  ;continuar error de pesos, optimizar, y devolver error
-)
+    1))
 
 ;________
 
@@ -174,30 +181,61 @@
           (lambda (element)
             (if (> 0 element)
               (* element 0.1)
-              element
-            )
-          ) 
-          row
-        )
-      )
-      (output this)
-    )
-  )
-)
+              element)) 
+          row))
+      (output this))))
 
 (defmethod derivative ((this LeakyReLu) value)
   (if (> 0 value)
     0.1
-    1
-  )
-)
-
-(defmethod backward ((this LeakyReLU) error)
-  ;optimizes layer and returns error of previous layer
-  
-)
+    1))
 
 ;_______________________________________________________________
+;Loss function
+
+(defun loss (results expected_classes)
+  (flet ((actual_loss (a y)
+         (/ (expt (- a y) 2) 2)
+         ))
+    (mapcar 
+      (lambda (sample_result exp_class)
+        (mapcar #'actual_loss sample_result (encode exp_class)))
+      results expected_classes)))
+
+(defun loss_derivative (results expected_classes)
+  (flet ((actual_derivative (a y)
+         (- a y)
+         ))
+    (mapcar 
+      (lambda (sample_result exp_class)
+        (mapcar #'actual_derivative sample_result (encode exp_class)))
+      results expected_classes)))
+
+
+;_______________________________________________________________
+
+(defun get-numbers-from-line (csv-file-path line-number)
+  (with-open-file (stream csv-file-path :direction :input)
+    (loop repeat line-number
+          do (read-line stream))
+    (let ((line (read-line stream)))
+      (if line
+          (let* ((split-line (loop for i = 0 then (1+ j)
+                                   for j = (or (position #\, line :start i) (length line))
+                                   collect (subseq line i j)
+                                   until (= j (length line)))))
+            (map 'list #'parse-integer split-line))
+          (error "Line ~a not found in the CSV file." line-number)))))
+
+;; Example usage:
+;; (setq csv-file-path "C:\\Users\\Usuario\\Desktop\\EMNIST\\emnist-digits-test.csv")
+;; (setq line-number 0) ; Replace this with the line number you want to extract
+;; (setq numbers-list (get-numbers-from-line csv-file-path line-number))
+;; (format t "Numbers List: ~a~%" numbers-list)
+;_______________________________________________________________
+
+
+;tests
 
 (defvar X '((1 2 3 2.5)
                  (2 5 -1 2)
@@ -210,10 +248,10 @@
 (defvar biases '(2 3 0.5))
 
 
-(defvar layer1 (make-instance 'LeakyReLU :n_neurons 3 :n_inputs 4))
-(defvar layer2 (make-instance 'LeakyReLU :n_neurons 2 :n_inputs 3))
-(defvar layer3 (make-instance 'LeakyReLU :n_neurons 1 :n_inputs 2))
-(defvar nn (list layer1 layer2 layer3))
+(defvar layer1 (make-instance 'LeakyReLU :n_neurons 4 :n_inputs 2))
+(defvar layer2 (make-instance 'LeakyReLU :n_neurons 2 :n_inputs 4))
+;(defvar layer3 (make-instance 'LeakyReLU :n_neurons 9 :n_inputs 9))
+(defvar nn (list layer1 layer2))
 
 (defun predict (input topology)
   (if topology
@@ -222,7 +260,99 @@
   )
 )
 
-(forward layer1 X)
+;(forward layer1 X)
 ;(print_matrix (forward layer2 (output layer1)))
-(print_matrix (predict X nn))
-(print_matrix (output layer3))
+;(print_matrix (predict X nn))
+
+
+(defun optimize_nn (error rtopology)
+  (if rtopology
+    (optimize_nn (backward (car rtopology) error) (cdr rtopology))
+  )
+)
+;(inspect (caddr nn))
+
+
+;(optimize_nn (loss_derivative (predict X nn) 'here_go_the_classes) (reverse nn))
+
+
+;(print_matrix (predict X nn))
+;(inspect (caddr nn))
+
+
+;_______________________________________________________________
+
+;gets batch from file
+;(defun get_batch (batch_number file batch_size)
+;  (let ((batch nil))
+;    (loop for i from (* batch_number batch_size) to (1- (* (1+ batch_number) batch_size)) do
+;      (setq batch (append batch (list (get-numbers-from-line file i)))))
+;    batch))
+
+;gets batch from matrix
+(defun get_batch (batch_number file batch_size)
+  (let ((batch nil))
+    (loop for i from (* batch_number batch_size) to (1- (* (1+ batch_number) batch_size)) do
+      (setq batch (append batch (list (nth i file)))))
+    batch))
+
+;(print (get_batch 0 *colors_matrix* *batch_size*))
+;(print (get_batch 1 *colors_matrix* *batch_size*))
+;(print (get_batch 2 *colors_matrix* *batch_size*))
+
+(defun train (train_file)
+  (loop for batch_id from 0 to (1- (/ *train_file_size* *batch_size*)) do
+    (let ((batch (get_batch batch_id train_file *batch_size*)))
+      ;debug
+      ;(print batch_id)
+      ;(inspect (car nn))
+      ;(inspect (cadr nn))
+      ;(inspect (caddr nn))
+      
+      ;adapt batch and optimize
+      (optimize_nn 
+        (loss_derivative 
+          (predict (mapcar #'cdr batch) nn) ;input
+          (mapcar #'car batch) ;classes
+        ) 
+        (reverse nn)
+      )
+    )
+  )
+)
+
+(defun total_loss (test)
+  (format t "~%Avg loss: ~a~%" 
+    (/
+      (reduce #'+ 
+        (mapcan #'identity 
+          (loss
+            (predict (mapcar #'cdr test) nn)
+            (mapcar #'car test))))
+      (length test)))
+)
+
+(total_loss *colors_matrix*)
+;(total_loss (list (car *colors_matrix*)))
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+;(total_loss (list (car *colors_matrix*)))
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+
+(train *colors_matrix*)
+(total_loss *colors_matrix*)
+
+
+;(print "TRAINING FINISHED")
+;(inspect (car nn))
+;(inspect (cadr nn))
