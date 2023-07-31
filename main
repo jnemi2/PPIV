@@ -62,8 +62,8 @@
 ;_____________________________________________________________________________
 
 (defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
-(defvar *batch_size* 5) ;number of samples to be fed at once during training
-(defvar *train_file_size* 5)
+(defvar *batch_size* 1) ;number of samples to be fed at once during training
+(defvar *train_file_size* 13)
 ;
 (defvar *classes* '((1 0)
                     (0 1))) ;one-hot-encoded classes
@@ -75,6 +75,20 @@
                       (1 -0.054 0.508)
                       (1 -0.128 -0.011)))
 
+(defvar *parabola-points*
+      '((1 1.0 1.0)
+        (1 0.9 0.81)
+        (1 0.8 0.64)
+        (0 0.6 0.36)
+        (0 0.4 0.16)
+        (0 0.2 0.04)
+        (0 0.0 0.0)
+        (0 -0.2 0.04)
+        (0 -0.4 0.16)
+        (0 -0.6 0.36)
+        (1 -0.8 0.64)
+        (1 -0.9 0.81)
+        (1 -1.0 1.0)))
 
 (defun encode (class)
   (nth class *classes*))
@@ -332,26 +346,15 @@
       (length test)))
 )
 
-(total_loss *colors_matrix*)
-;(total_loss (list (car *colors_matrix*)))
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
-;(total_loss (list (car *colors_matrix*)))
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
 
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
 
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
+(dotimes (i 100)
+  (train *parabola-points*)
+  (total_loss *parabola-points*)
+)
 
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
-
-(train *colors_matrix*)
-(total_loss *colors_matrix*)
-
+(print_matrix (predict '((0.5 0.25)) nn))
+(print_matrix (predict '((0.95 0.9)) nn))
 
 ;(print "TRAINING FINISHED")
 ;(inspect (car nn))
