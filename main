@@ -62,8 +62,8 @@
 ;_____________________________________________________________________________
 
 (defvar *learning_rate* -0.05) ;must be negative to implement gradient descent
-(defvar *batch_size* 1) ;number of samples to be fed at once during training
-(defvar *train_file_size* 13)
+(defvar *batch_size* 2) ;number of samples to be fed at once during training
+(defvar *train_file_size* 14)
 ;
 (defvar *classes* '((1 0)
                     (0 1))) ;one-hot-encoded classes
@@ -83,6 +83,7 @@
         (0 0.4 0.16)
         (0 0.2 0.04)
         (0 0.0 0.0)
+        (0 -0.1 0.01)
         (0 -0.2 0.04)
         (0 -0.4 0.16)
         (0 -0.6 0.36)
@@ -348,8 +349,9 @@
 
 
 
-(dotimes (i 100)
+(dotimes (i 1000)
   (train *parabola-points*)
+  (print i)
   (total_loss *parabola-points*)
 )
 
